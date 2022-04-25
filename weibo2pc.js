@@ -1,11 +1,11 @@
 // ==UserScript==
-// @name         微博移动版网页自动跳转PC版
+// @name         微博国际版版分享网页自动跳转PC版
 // @namespace    http://tampermonkey.net/
-// @version      0.1
-// @description  微博移动版网页自动跳转PC版!
-// @author       owovo
-// @match        https://m.weibo.cn/detail/*
-// @match        https://m.weibo.cn/status/*
+// @version      1.0
+// @description  微博国际版版分享网页自动跳转PC版!
+// @author       coco
+// @match        https://share.api.weibo.cn/*
+// @match        https://weibo.com/ajax/side/cards/sideUser?*
 // @grant        none
 // ==/UserScript==
 
@@ -107,28 +107,67 @@
      return url;
  };
 
- try {
-     // debugger;
-     let ret = window.location.href.match(/weibo_id=/);
-     let weiboMobileId = window.location.href.substring(ret.index+ret[0].length);
-     let weiboPcId = WeiboUtil.mid2url(weiboMobileId);
-     let weiboUrl = `https://weibo.com/8888/${weiboPcId}`
-     //window.location.replace(weiboUrl);
-     return;
+function httpGetAsync(theUrl, callback)
+{
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() {
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+            callback(xmlHttp.responseText);
+    }
+    xmlHttp.open("GET", theUrl, true); // true for asynchronous
+    xmlHttp.send(null);
+}
 
-     ret = window.location.href.match(/weibo_id=/);
-     const html = document.documentElement.innerHTML
-     const mid = html.match(/"mid":\s"(.*?)"/)[1]
-     const uid = html.match(/https:\/\/m\.weibo\.cn\/u\/(.*?)\?/)[1];
-     var id = "";
-     if (document.location.href.match(/^.*m\.weibo\.cn\/(status|detail)\/(\w+)\??.*$/i) && !/^\d+$/.test(RegExp.$2)) {
-         id = RegExp.$2;
-     } else {
-         id = WeiboUtil.mid2url(mid);
-     }
-     const href = `https://weibo.com/${uid}/${id}`
-     window.location.replace(href);
- } catch (e) {
-     console.log('[WeiboPcGo] 解析 id 失败', e)
- }
+
+function getCallback(response)
+{
+    console.log("getCallback response=", response)
+    console.log("getCallback response text=", response.responseText)
+
+    return response
+}
+
+
+function replaceShareUrl2CardUrl()
+{
+    // 先用这个函数根据weibo id 找到对应的 用户 uid
+    let ret = window.location.href.match(/weibo_id=(\d+)/);
+    // let weiboMobileId = window.location.href.substring(ret.index+ret[0].length);
+    let weiboMobileId = ret[1];
+    let weiboPcId = WeiboUtil.mid2url(weiboMobileId);
+    let ajaxUrl = `https://weibo.com/ajax/side/cards/sideUser?id=${weiboMobileId}&idType=mid`
+    window.location.replace(ajaxUrl);
+}
+
+function replaceCardUrl2PcUrl()
+{
+    // 这里已经找到用户 uid, 和 weibo id组合起来访问PC页面
+    const hrefRet = window.location.href.match(/sideUser\?id=(\d+)&/);
+    const weiboMobileId = hrefRet[1];
+    const docHtml = document.documentElement.innerHTML;
+    const htmlRet = docHtml.match(/{"user":{"id":(\d+),/);
+    const weiboUid = htmlRet[1];
+    const weiboPcId = WeiboUtil.mid2url(weiboMobileId);
+    const pcUrl = `https://weibo.com/${weiboUid}/${weiboPcId}`;
+    window.location.replace(pcUrl);
+}
+
+
+try {
+
+    if(window.location.href.match(/share.api.weibo.cn/))
+    {
+        replaceShareUrl2CardUrl();
+    }
+
+    if(window.location.href.match(/weibo.com\/ajax\/side\/cards/))
+    {
+        replaceCardUrl2PcUrl();
+    }
+
+    return;
+
+} catch (e) {
+    console.log('[WeiboPcGo] 解析 weiboPcId 失败', e)
+}
 })();
