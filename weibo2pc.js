@@ -107,27 +107,6 @@
      return url;
  };
 
-function httpGetAsync(theUrl, callback)
-{
-    var xmlHttp = new XMLHttpRequest();
-    xmlHttp.onreadystatechange = function() {
-        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-            callback(xmlHttp.responseText);
-    }
-    xmlHttp.open("GET", theUrl, true); // true for asynchronous
-    xmlHttp.send(null);
-}
-
-
-function getCallback(response)
-{
-    console.log("getCallback response=", response)
-    console.log("getCallback response text=", response.responseText)
-
-    return response
-}
-
-
 function replaceShareUrl2CardUrl()
 {
     // 先用这个函数根据weibo id 找到对应的 用户 uid
